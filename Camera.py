@@ -1,99 +1,47 @@
 import cv2
-import subprocess
-import sys
 
-def check_camera_availability():
-    """Проверяет доступность камеры и компонентов"""
-    print("=== Проверка системы ===")
+def show_usb_camera():
+    print("=== ЗАПУСК USB КАМЕРЫ ===")
     
-    # Проверяем наличие видео устройств
-    try:
-        result = subprocess.run(['ls', '/dev/video*'], capture_output=True, text=True)
-        print("Видео устройства:", result.stdout)
-    except Exception as e:
-        print("Ошибка при проверке видео устройств:", e)
-    
-    # Проверяем GStreamer
-    try:
-        result = subprocess.run(['gst-inspect-1.0', '--version'], capture_output=True, text=True)
-        print("GStreamer версия:", result.stdout)
-    except Exception as e:
-        print("GStreamer не установлен:", e)
-
-def gstreamer_pipeline(
-    sensor_id=0,
-    capture_width=1920,
-    capture_height=1080,
-    display_width=960,
-    display_height=540,
-    framerate=30,
-    flip_method=0,
-):
-    return (
-        "nvarguscamerasrc sensor-id=%d ! "
-        "video/x-raw(memory:NVMM), width=(int)%d, height=(int)%d, framerate=(fraction)%d/1 ! "
-        "nvvidconv flip-method=%d ! "
-        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
-        "videoconvert ! "
-        "video/x-raw, format=(string)BGR ! appsink drop=1 max-buffers=1"
-        % (
-            sensor_id,
-            capture_width,
-            capture_height,
-            framerate,
-            flip_method,
-            display_width,
-            display_height,
-        )
-    )
-
-def show_camera():
-    print("=== Запуск камеры ===")
-    check_camera_availability()
-    
-    window_title = "CSI Camera"
-    
-    # Пробуем разные sensor-id
-    for sensor_id in [0, 1]:
-        print(f"Пробуем sensor-id={sensor_id}")
-        pipeline = gstreamer_pipeline(sensor_id=sensor_id, flip_method=0)
-        print("GStreamer pipeline:", pipeline)
+    # Пробуем разные индексы камер
+    for camera_index in [0, 1, 2]:
+        print(f"Пробуем камеру с индексом {camera_index}...")
+        cap = cv2.VideoCapture(camera_index)
         
-        video_capture = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
+        # Устанавливаем стандартные разрешения для теста
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         
-        if video_capture.isOpened():
-            print(f"✓ Камера найдена с sensor-id={sensor_id}")
+        if cap.isOpened():
+            print(f"✓ Камера найдена на индексе {camera_index}")
+            
             try:
                 while True:
-                    ret_val, frame = video_capture.read()
-                    if not ret_val:
+                    ret, frame = cap.read()
+                    if not ret:
                         print("Ошибка чтения кадра")
                         break
                     
-                    cv2.imshow(window_title, frame)
+                    # Показываем информацию о кадре
+                    height, width = frame.shape[:2]
+                    cv2.putText(frame, f"Camera {camera_index} - {width}x{height}", 
+                               (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                     
-                    keyCode = cv2.waitKey(10) & 0xFF
-                    if keyCode == 27 or keyCode == ord('q'):
+                    cv2.imshow('USB Camera', frame)
+                    
+                    # Выход по 'q' или ESC
+                    key = cv2.waitKey(1) & 0xFF
+                    if key == ord('q') or key == 27:
                         break
+                        
             finally:
-                video_capture.release()
+                cap.release()
                 cv2.destroyAllWindows()
             return
         else:
-            print(f"✗ Камера не найдена с sensor-id={sensor_id}")
+            print(f"✗ Камера не найдена на индексе {camera_index}")
     
-    print("=== Альтернативные методы ===")
-    # Пробуем стандартный OpenCV
-    for i in range(3):
-        cap = cv2.VideoCapture(i)
-        if cap.isOpened():
-            print(f"Найдена камера через OpenCV с индексом {i}")
-            ret, frame = cap.read()
-            if ret:
-                cv2.imshow(f"Camera {i}", frame)
-                cv2.waitKey(3000)
-                cv2.destroyAllWindows()
-            cap.release()
+    print("❌ Не удалось найти ни одну камеру")
 
 if __name__ == "__main__":
-    show_camera()
+    show_usb_camera()
