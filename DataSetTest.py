@@ -7,6 +7,7 @@
 
 import cv2
 import os
+import time
 
 """ 
 gstreamer_pipeline returns a GStreamer pipeline for capturing from the CSI camera
@@ -82,6 +83,7 @@ def show_camera():
                     cv2.imwrite(filename, frame)
                     print(f"Сохранен кадр: {filename}")
                     frame_count += 1
+                    time.sleep(3)
                 
                 keyCode = cv2.waitKey(10) & 0xFF
                 # Stop the program on the ESC key or 'q'
