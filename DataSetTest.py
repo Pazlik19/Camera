@@ -55,7 +55,7 @@ def show_camera():
     
     # Счетчик для сохраненных кадров
     frame_count = 0
-    total_frames_to_save = 30
+    total_frames_to_save = 600
 
     # To flip the image, modify the flip_method parameter (0 and 2 are the most common)
     print(gstreamer_pipeline(flip_method=0))
@@ -83,7 +83,7 @@ def show_camera():
                     cv2.imwrite(filename, frame)
                     print(f"Сохранен кадр: {filename}")
                     frame_count += 1
-                    time.sleep(1)
+                    time.sleep(0.5)
                 
                 keyCode = cv2.waitKey(10) & 0xFF
                 # Stop the program on the ESC key or 'q'
